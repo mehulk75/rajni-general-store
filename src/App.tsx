@@ -242,19 +242,24 @@ function App() {
 
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Available Products</h2>
+
         {/* Pickup Time Selector */}
         {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
-          <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
-            <span className="text-xl">🕒</span>
-            <select
-              value={pickupTime}
-              onChange={(e) => setPickupTime(e.target.value)}
-              className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
-            >
-              {pickupOptions.map((option, index) => (
-                <option key={index} value={option}>{option}</option>
-              ))}
-            </select>
+          <div className="mb-6"> {/* Added wrapper div with margin-bottom */}
+            <h3 className="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Choose your preferred pickup slot</h3>
+            <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
+              <span className="text-xl">🕒</span>
+              <select
+                value={pickupTime}
+                onChange={(e) => setPickupTime(e.target.value)}
+                className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
+              >
+                {pickupOptions.map((option, index) => (
+                  <option key={index} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -335,6 +340,8 @@ function App() {
             </div>
           </>
         )}
+
+        <h2 className="text-lg font-semibold mb-4 text-gray-800 mt-8">Available Products</h2>
 
         {/* Upload List Section Placeholder */}
         <div className="mt-8 bg-blue-600 text-white p-6 rounded-xl text-center shadow-md">
