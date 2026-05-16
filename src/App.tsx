@@ -4,6 +4,7 @@ import { type Product, type CartItem } from './data'; // Import CartItem
 
 const PRODUCTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=0&single=true&output=csv";
 const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=113796128&single=true&output=csv";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi_Z6sZ6WR8R7oJoVbS4TirK1v_cpD4tLrCgxXeSLzNOt7fCQVIQYoYuAkkRH0XfqqRQ/exec";
 
 // Helper function to parse time strings like "7:00 AM" into total minutes from midnight
 const parseTimeToMinutes = (timeStr: string): number => {
@@ -196,9 +197,26 @@ function App() {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const sendWhatsAppOrder = () => { // Renamed from handleCheckout
+  const sendWhatsAppOrder = () => { 
     const phoneNumber = '+919835978626'; // Placeholder phone number
-    let message = `*Pickup Time: ${pickupTime}*\n\n`; // Add pickup time prominently
+    
+    // --- 1. GENERATE UNIQUE ORDER ID ---
+    const orderId = "ORD-" + Date.now();
+
+    // --- 2. SILENTLY LOG TO GOOGLE SHEETS (ASYNC) ---
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: orderId,
+        cart: cart,
+        pickupTime: pickupTime
+      })
+    }).catch(err => console.error("Async logging failed:", err));
+
+    // --- 3. BUILD AND OPEN WHATSAPP IMMEDIATELY ---
+    let message = `*Pickup Time: ${pickupTime}*\n\n`; 
     message += 'My Order from Rajni General Store:\n\n';
 
     cart.forEach((item, index) => {
@@ -209,7 +227,7 @@ function App() {
 
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-    setIsCartModalOpen(false); // Close modal after sending order
+    setIsCartModalOpen(false); 
   };
 
   const handleUploadList = () => {
@@ -242,7 +260,6 @@ function App() {
 
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Available Products</h2>
 
         {/* Pickup Time Selector */}
         {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
@@ -289,59 +306,74 @@ function App() {
               {products
                 .filter(product => selectedCategory === 'All' || product.category === selectedCategory)
                 .map((product) => (
-                  <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                    <div className="text-4xl mb-2">{product.image}</div>
-                    <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
+                  <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center h-full">
                     
-                    <div className="mb-3">
-                      <span className="font-bold text-green-600">₹{product.price}</span>
-                      {product.originalPrice && (
-                        <span className="text-xs text-gray-400 line-through ml-2">₹{product.originalPrice}</span>
+                    {/* Fixed Height Image/Emoji Container */}
+                    <div className="w-full h-24 flex items-center justify-center mb-2">
+                      {product.image.startsWith('http') ? (
+                        <img 
+                          src={product.image} 
+                          alt={product.name} 
+                          className="max-h-full max-w-full object-contain drop-shadow-sm" 
+                          loading="lazy" 
+                        />
+                      ) : (
+                        <div className="text-5xl">{product.image}</div>
                       )}
                     </div>
                     
-                    {(() => {
-                      const cartItem = cart.find((item) => item.id === product.id);
-                      const currentQuantity = cartItem ? cartItem.quantity : 0;
+                    <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
+                    
+                    {/* mt-auto pushes the price and button to the absolute bottom */}
+                    <div className="mt-auto w-full">
+                      <div className="mb-3">
+                        <span className="font-bold text-green-600">₹{product.price}</span>
+                        {product.originalPrice && (
+                          <span className="text-xs text-gray-400 line-through ml-2">₹{product.originalPrice}</span>
+                        )}
+                      </div>
+                      
+                      {(() => {
+                        const cartItem = cart.find((item) => item.id === product.id);
+                        const currentQuantity = cartItem ? cartItem.quantity : 0;
 
-                      if (currentQuantity === 0) {
-                        return (
-                          <button 
-                            onClick={() => addToCart(product)}
-                            className="w-full bg-blue-50 text-blue-600 font-semibold py-2 rounded-lg text-sm hover:bg-blue-100 transition-colors"
-                          >
-                            Add to Cart
-                          </button>
-                        );
-                      } else {
-                        return (
-                          <div className="flex items-center justify-center w-full bg-green-50 border border-green-300 rounded-lg text-green-700 font-semibold text-sm">
-                            <button
-                              onClick={() => removeFromCart(product.id)}
-                              className="py-2 px-3 focus:outline-none text-lg"
-                            >
-                              -
-                            </button>
-                            <span className="flex-1 text-center py-2 border-x border-green-200">
-                              {currentQuantity}
-                            </span>
-                            <button
+                        if (currentQuantity === 0) {
+                          return (
+                            <button 
                               onClick={() => addToCart(product)}
-                              className="py-2 px-3 focus:outline-none text-lg"
+                              className="w-full bg-blue-50 text-blue-600 font-semibold py-2 rounded-lg text-sm hover:bg-blue-100 transition-colors"
                             >
-                              +
+                              Add to Cart
                             </button>
-                          </div>
-                        );
-                      }
-                    })()}
+                          );
+                        } else {
+                          return (
+                            <div className="flex items-center justify-center w-full bg-green-50 border border-green-300 rounded-lg text-green-700 font-semibold text-sm">
+                              <button
+                                onClick={() => removeFromCart(product.id)}
+                                className="py-2 px-3 focus:outline-none text-lg"
+                              >
+                                -
+                              </button>
+                              <span className="flex-1 text-center py-2 border-x border-green-200">
+                                {currentQuantity}
+                              </span>
+                              <button
+                                onClick={() => addToCart(product)}
+                                className="py-2 px-3 focus:outline-none text-lg"
+                              >
+                                +
+                              </button>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
                   </div>
                 ))}
             </div>
           </>
         )}
-
-        <h2 className="text-lg font-semibold mb-4 text-gray-800 mt-8">Available Products</h2>
 
         {/* Upload List Section Placeholder */}
         <div className="mt-8 bg-blue-600 text-white p-6 rounded-xl text-center shadow-md">
