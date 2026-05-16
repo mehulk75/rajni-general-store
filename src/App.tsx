@@ -8,6 +8,22 @@ function App() {
     setCart([...cart, product]);
   };
 
+  const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
+
+  const handleCheckout = () => {
+    const phoneNumber = '+919999999999'; // Placeholder phone number
+    let message = 'My Order from Rajni General Store:\n\n';
+
+    cart.forEach((item, index) => {
+      message += `${index + 1}. ${item.name} - ₹${item.price}\n`;
+    });
+
+    message += `\nTotal: ₹${totalPrice}`;
+
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header & Banner */}
@@ -66,9 +82,12 @@ function App() {
           <div className="max-w-md mx-auto flex justify-between items-center">
             <div>
               <p className="text-sm text-gray-500">Total Items</p>
-              <p className="font-bold text-lg">{cart.length} items</p>
+              <p className="font-bold text-lg">{cart.length} items (₹{totalPrice})</p>
             </div>
-            <button className="bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-md flex items-center gap-2">
+            <button
+              onClick={handleCheckout}
+              className="bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-md flex items-center gap-2"
+            >
               <span>Checkout</span>
               <span className="text-xl">💬</span>
             </button>
