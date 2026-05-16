@@ -56,7 +56,7 @@ function App() {
   };
 
   const handleUploadList = () => {
-    const phoneNumber = '919999999999'; // Placeholder phone number
+    const phoneNumber = '919835978626'; // Placeholder phone number
     const message = "Hi, I have a handwritten grocery list. I will attach the photo below. Please let me know when it is packed!";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
