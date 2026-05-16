@@ -55,6 +55,13 @@ function App() {
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleUploadList = () => {
+    const phoneNumber = '919999999999'; // Placeholder phone number
+    const message = "Hi, I have a handwritten grocery list. I will attach the photo below. Please let me know when it is packed!";
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header & Banner */}
@@ -104,7 +111,10 @@ function App() {
         <div className="mt-8 bg-blue-600 text-white p-6 rounded-xl text-center shadow-md">
           <h3 className="font-bold text-lg mb-2">Have a handwritten list?</h3>
           <p className="text-sm text-blue-100 mb-4">Don't want to search? Just upload a photo of your list and we'll pack it.</p>
-          <button className="bg-white text-blue-600 font-bold py-2 px-6 rounded-full shadow-sm">
+          <button
+            onClick={handleUploadList}
+            className="bg-white text-blue-600 font-bold py-2 px-6 rounded-full shadow-sm"
+          >
             📷 Upload List
           </button>
         </div>
