@@ -40,6 +40,7 @@ function App() {
       Papa.parse(PRODUCTS_CSV_URL, {
         download: true,
         header: true,
+        transformHeader: (header) => header.trim(),
         complete: (results) => {
           const parsedProducts: Product[] = results.data
             .filter((item: any) => item.id && item.name && item.price && item.category && item.image) // Ensure all required fields exist
@@ -64,15 +65,14 @@ function App() {
       Papa.parse(SETTINGS_CSV_URL, {
         download: true,
         header: true,
+        transformHeader: (header) => header.trim(),
         complete: (results) => {
-          console.log("1. Raw Settings CSV Data:", results.data);
           const parsedSettings: Record<string, string> = {};
           (results.data as { key: string; value: string }[]).forEach(row => {
             if (row.key && row.value) {
               parsedSettings[row.key] = row.value;
             }
           });
-          console.log("2. Parsed Settings Object:", parsedSettings);
           resolve(parsedSettings);
         },
         error: (error: Error) => {
@@ -96,7 +96,6 @@ function App() {
 
   // Effect to calculate store status in real-time
   useEffect(() => {
-    console.log("3. Current Settings State:", settings);
     if (Object.keys(settings).length === 0) {
       setStoreStatus('LOADING');
       return;
@@ -110,8 +109,6 @@ function App() {
       const closeTime = parseTimeToMinutes(settings.shop_close_time);
       const breakStartTime = parseTimeToMinutes(settings.break_start_time);
       const breakEndTime = parseTimeToMinutes(settings.break_end_time);
-
-      console.log("4. Parsed Time Minutes:", { currentMinutes, openTime, closeTime, breakStartTime, breakEndTime });
 
       if (currentMinutes >= breakStartTime && currentMinutes < breakEndTime) {
         setStoreStatus('LUNCH_BREAK');
