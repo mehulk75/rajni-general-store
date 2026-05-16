@@ -5,6 +5,22 @@ import { type Product, type CartItem } from './data'; // Import CartItem
 const PRODUCTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=0&single=true&output=csv";
 const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=113796128&single=true&output=csv";
 
+// Helper function to parse time strings like "7:00 AM" into total minutes from midnight
+const parseTimeToMinutes = (timeStr: string): number => {
+  if (!timeStr) return -1; // Indicate invalid time
+
+  const [time, period] = timeStr.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+
+  if (period === 'PM' && hours !== 12) {
+    hours += 12;
+  } else if (period === 'AM' && hours === 12) {
+    hours = 0; // Midnight
+  }
+  return hours * 60 + minutes;
+};
+
+
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +29,7 @@ function App() {
   const [isCartModalOpen, setIsCartModalOpen] = useState(false); // New state for modal
   const [settings, setSettings] = useState<Record<string, string>>({}); // New state for settings
   const [pickupTime, setPickupTime] = useState<string>("As soon as possible (15-20 mins)"); // New state for pickup time
+  const [storeStatus, setStoreStatus] = useState<'LOADING' | 'OPEN' | 'LUNCH_BREAK' | 'CLOSED_NIGHT'>('LOADING');
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
@@ -75,6 +92,42 @@ function App() {
       });
   }, []);
 
+  // Effect to calculate store status in real-time
+  useEffect(() => {
+    if (Object.keys(settings).length === 0) {
+      setStoreStatus('LOADING');
+      return;
+    }
+
+    const updateStatus = () => {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const openTime = parseTimeToMinutes(settings.shop_open_time);
+      const closeTime = parseTimeToMinutes(settings.shop_close_time);
+      const breakStartTime = parseTimeToMinutes(settings.break_start_time);
+      const breakEndTime = parseTimeToMinutes(settings.break_end_time);
+
+      if (currentMinutes >= breakStartTime && currentMinutes < breakEndTime) {
+        setStoreStatus('LUNCH_BREAK');
+        setPickupTime(`After lunch closure (Ready at ${settings.break_end_time})`);
+      } else if (currentMinutes < openTime || currentMinutes >= closeTime) {
+        setStoreStatus('CLOSED_NIGHT');
+        setPickupTime(`Tomorrow at ${settings.shop_open_time}`);
+      } else {
+        setStoreStatus('OPEN');
+        setPickupTime("As soon as possible (15-20 mins)");
+      }
+    };
+
+    updateStatus(); // Initial status calculation
+
+    const intervalId = setInterval(updateStatus, 60 * 1000); // Update every minute
+
+    return () => clearInterval(intervalId); // Cleanup interval on unmount
+  }, [settings]);
+
+
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
@@ -134,10 +187,17 @@ function App() {
           <h1 className="text-xl font-bold text-green-700">Rajni General Store</h1>
         </div>
         
-        {/* The Lunch Break Promo Banner */}
-        <div className="bg-yellow-100 p-3 text-sm text-yellow-800 text-center font-medium border-b border-yellow-200">
-          🕒 Shop closed for lunch? Order online now and your bags will be packed and ready for pickup at {settings.break_end_time || "4:30 PM"}!
-        </div>
+        {/* The dynamic Promo Banner */}
+        {storeStatus === 'LUNCH_BREAK' && settings.break_end_time && (
+          <div className="bg-yellow-100 p-3 text-sm text-yellow-800 text-center font-medium border-b border-yellow-200">
+            🕒 Shop closed for lunch. Orders placed now will be ready at {settings.break_end_time}.
+          </div>
+        )}
+        {storeStatus === 'CLOSED_NIGHT' && settings.shop_open_time && (
+          <div className="bg-blue-100 p-3 text-sm text-blue-800 text-center font-medium border-b border-blue-200">
+            🌙 Shop is closed for the night. Orders placed now will be ready tomorrow at {settings.shop_open_time}.
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -145,22 +205,32 @@ function App() {
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Available Products</h2>
 
         {/* Pickup Time Selector */}
-        <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
-          <span className="text-xl">🕒</span>
-          <select
-            value={pickupTime}
-            onChange={(e) => setPickupTime(e.target.value)}
-            className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
-          >
-            <option>As soon as possible (15-20 mins)</option>
-            {settings.break_end_time && (
-              <option>After lunch closure (Ready at {settings.break_end_time})</option>
-            )}
-            {settings.break_end_time && settings.shop_close_time && (
-              <option>Evening pickup (Between {settings.break_end_time} and {settings.shop_close_time})</option>
-            )}
-          </select>
-        </div>
+        {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
+          <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
+            <span className="text-xl">🕒</span>
+            <select
+              value={pickupTime}
+              onChange={(e) => setPickupTime(e.target.value)}
+              className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
+            >
+              {storeStatus === 'CLOSED_NIGHT' && settings.shop_open_time && (
+                <option>Tomorrow at {settings.shop_open_time}</option>
+              )}
+              {storeStatus === 'LUNCH_BREAK' && settings.break_end_time && settings.shop_close_time && (
+                <>
+                  <option>After lunch closure (Ready at {settings.break_end_time})</option>
+                  <option>Evening pickup (Before {settings.shop_close_time})</option>
+                </>
+              )}
+              {storeStatus === 'OPEN' && settings.shop_close_time && (
+                <>
+                  <option>As soon as possible (15-20 mins)</option>
+                  <option>Evening pickup (Before {settings.shop_close_time})</option>
+                </>
+              )}
+            </select>
+          </div>
+        )}
 
         {loading ? (
           <p className="text-center text-gray-600 text-lg mt-8">Loading products...</p>
