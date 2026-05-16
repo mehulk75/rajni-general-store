@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
-import { type Product } from './data';
+import { type Product, type CartItem } from './data'; // Import CartItem
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?output=csv";
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]); // Cart now stores CartItem[]
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false); // New state for modal
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
@@ -39,23 +40,46 @@ function App() {
   }, []);
 
   const addToCart = (product: Product) => {
-    setCart([...cart, product]);
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prevCart.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        return [...prevCart, { ...product, quantity: 1 }];
+      }
+    });
   };
 
-  const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
+  const removeFromCart = (productId: string) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item) => item.id === productId);
+      if (existingItem && existingItem.quantity > 1) {
+        return prevCart.map((item) =>
+          item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+        );
+      } else {
+        return prevCart.filter((item) => item.id !== productId);
+      }
+    });
+  };
 
-  const handleCheckout = () => {
+  const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const sendWhatsAppOrder = () => { // Renamed from handleCheckout
     const phoneNumber = '+919835978626'; // Placeholder phone number
     let message = 'My Order from Rajni General Store:\n\n';
 
     cart.forEach((item, index) => {
-      message += `${index + 1}. ${item.name} - ₹${item.price}\n`;
+      message += `${index + 1}. ${item.name} x ${item.quantity} - ₹${item.price * item.quantity}\n`;
     });
 
     message += `\nTotal: ₹${totalPrice}`;
 
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+    setIsCartModalOpen(false); // Close modal after sending order
   };
 
   const handleUploadList = () => {
@@ -153,12 +177,77 @@ function App() {
               <p className="font-bold text-lg">{cart.length} items (₹{totalPrice})</p>
             </div>
             <button
-              onClick={handleCheckout}
+              onClick={() => setIsCartModalOpen(true)} // Open modal instead of direct checkout
               className="bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-md flex items-center gap-2"
             >
               <span>Checkout</span>
               <span className="text-xl">💬</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Review Modal */}
+      {isCartModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 flex justify-center items-end" onClick={() => setIsCartModalOpen(false)}>
+          <div
+            className="fixed bottom-0 w-full max-w-md bg-white rounded-t-2xl p-4 z-50 shadow-lg"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Your Cart</h2>
+              <button onClick={() => setIsCartModalOpen(false)} className="text-gray-500 hover:text-gray-700 text-2xl font-semibold">
+                &times;
+              </button>
+            </div>
+
+            {cart.length === 0 ? (
+              <p className="text-gray-600 text-center py-8">Your cart is empty.</p>
+            ) : (
+              <>
+                <div className="max-h-80 overflow-y-auto mb-4">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">{item.name}</p>
+                        <p className="text-sm text-gray-500">₹{item.price} per item</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="bg-gray-200 text-gray-700 rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="font-bold text-gray-800 w-6 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => addToCart(item)}
+                          className="bg-green-100 text-green-700 rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="ml-4 font-bold text-gray-800 w-16 text-right">
+                        ₹{item.price * item.quantity}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                  <span className="text-lg font-bold text-gray-800">Grand Total:</span>
+                  <span className="text-xl font-bold text-green-600">₹{totalPrice}</span>
+                </div>
+
+                <button
+                  onClick={sendWhatsAppOrder} // New button for WhatsApp order
+                  className="w-full bg-green-600 text-white font-bold py-3 mt-6 rounded-xl shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Send Order via WhatsApp</span>
+                  <span className="text-xl">💬</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
