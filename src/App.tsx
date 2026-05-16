@@ -20,6 +20,20 @@ const parseTimeToMinutes = (timeStr: string): number => {
   return hours * 60 + minutes;
 };
 
+// Helper function to convert total minutes from midnight back into a 12-hour formatted string
+const formatMinutesToTime = (totalMinutes: number): string => {
+  if (totalMinutes === -1) return "N/A"; // Handle invalid time
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
+
+  return `${formattedHours}:${formattedMinutes} ${ampm}`;
+};
+
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,6 +44,7 @@ function App() {
   const [settings, setSettings] = useState<Record<string, string>>({}); // New state for settings
   const [pickupTime, setPickupTime] = useState<string>("As soon as possible (15-20 mins)"); // New state for pickup time
   const [storeStatus, setStoreStatus] = useState<'LOADING' | 'OPEN' | 'LUNCH_BREAK' | 'CLOSED_NIGHT'>('LOADING');
+  const [pickupOptions, setPickupOptions] = useState<string[]>([]); // New state for dynamic pickup options
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
@@ -110,15 +125,38 @@ function App() {
       const breakStartTime = parseTimeToMinutes(settings.break_start_time);
       const breakEndTime = parseTimeToMinutes(settings.break_end_time);
 
+      let options: string[] = [];
+      let currentCalculatedStatus: typeof storeStatus = 'LOADING';
+
       if (currentMinutes >= breakStartTime && currentMinutes < breakEndTime) {
-        setStoreStatus('LUNCH_BREAK');
-        setPickupTime(`After lunch closure (Ready at ${settings.break_end_time})`);
+        currentCalculatedStatus = 'LUNCH_BREAK';
+        options = [
+          `Right after lunch (Ready at ${settings.break_end_time})`,
+          `Evening slot (${settings.break_end_time} - ${settings.shop_close_time})`
+        ];
       } else if (currentMinutes < openTime || currentMinutes >= closeTime) {
-        setStoreStatus('CLOSED_NIGHT');
-        setPickupTime(`Tomorrow at ${settings.shop_open_time}`);
+        currentCalculatedStatus = 'CLOSED_NIGHT';
+        options = [
+          `Tomorrow morning (${settings.shop_open_time} - ${formatMinutesToTime(openTime + 120)})`,
+          `Tomorrow afternoon (12:00 PM - ${settings.break_start_time})`,
+          `Tomorrow evening (${settings.break_end_time} - ${settings.shop_close_time})`
+        ];
       } else {
-        setStoreStatus('OPEN');
-        setPickupTime("As soon as possible (15-20 mins)");
+        currentCalculatedStatus = 'OPEN';
+        options = [
+          "Immediately (10-15 mins)",
+          "In about 1 hour",
+        ];
+        if (currentMinutes + 60 < breakStartTime) {
+          options.push(`Today (${formatMinutesToTime(currentMinutes + 60)} - ${settings.break_start_time})`);
+        }
+        options.push(`Evening (${settings.break_end_time} - ${settings.shop_close_time})`);
+      }
+
+      setStoreStatus(currentCalculatedStatus);
+      setPickupOptions(options);
+      if (options.length > 0) {
+        setPickupTime(options[0]); // Set default to the first available option
       }
     };
 
@@ -215,21 +253,9 @@ function App() {
               onChange={(e) => setPickupTime(e.target.value)}
               className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
             >
-              {storeStatus === 'CLOSED_NIGHT' && settings.shop_open_time && (
-                <option>Tomorrow at {settings.shop_open_time}</option>
-              )}
-              {storeStatus === 'LUNCH_BREAK' && settings.break_end_time && settings.shop_close_time && (
-                <>
-                  <option>After lunch closure (Ready at {settings.break_end_time})</option>
-                  <option>Evening pickup (Before {settings.shop_close_time})</option>
-                </>
-              )}
-              {storeStatus === 'OPEN' && settings.shop_close_time && (
-                <>
-                  <option>As soon as possible (15-20 mins)</option>
-                  <option>Evening pickup (Before {settings.shop_close_time})</option>
-                </>
-              )}
+              {pickupOptions.map((option, index) => (
+                <option key={index} value={option}>{option}</option>
+              ))}
             </select>
           </div>
         )}
