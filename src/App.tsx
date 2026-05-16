@@ -8,6 +8,9 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  const categories = ['All', ...new Set(products.map(p => p.category))];
 
   useEffect(() => {
     setLoading(true);
@@ -82,29 +85,50 @@ function App() {
         {loading ? (
           <p className="text-center text-gray-600 text-lg mt-8">Loading products...</p>
         ) : (
-          /* Product Grid */
-          <div className="grid grid-cols-2 gap-4">
-            {products.map((product) => (
-              <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-              <div className="text-4xl mb-2">{product.image}</div>
-              <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
-              
-              <div className="mb-3">
-                <span className="font-bold text-green-600">₹{product.price}</span>
-                {product.originalPrice && (
-                  <span className="text-xs text-gray-400 line-through ml-2">₹{product.originalPrice}</span>
-                )}
-              </div>
-              
-              <button 
-                onClick={() => addToCart(product)}
-                className="w-full bg-blue-50 text-blue-600 font-semibold py-2 rounded-lg text-sm hover:bg-blue-100 transition-colors"
-              >
-                Add to Cart
-              </button>
+          <>
+            {/* Category Filters */}
+            <div className="flex space-x-2 pb-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ease-in-out ${
+                    selectedCategory === category
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
             </div>
-            ))}
-          </div>
+
+            {/* Product Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {products
+                .filter(product => selectedCategory === 'All' || product.category === selectedCategory)
+                .map((product) => (
+                  <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
+                    <div className="text-4xl mb-2">{product.image}</div>
+                    <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
+                    
+                    <div className="mb-3">
+                      <span className="font-bold text-green-600">₹{product.price}</span>
+                      {product.originalPrice && (
+                        <span className="text-xs text-gray-400 line-through ml-2">₹{product.originalPrice}</span>
+                      )}
+                    </div>
+                    
+                    <button 
+                      onClick={() => addToCart(product)}
+                      className="w-full bg-blue-50 text-blue-600 font-semibold py-2 rounded-lg text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </>
         )}
 
         {/* Upload List Section Placeholder */}
