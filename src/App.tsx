@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { type Product, type CartItem } from './data'; // Import CartItem
 
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?output=csv";
+const PRODUCTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=0&single=true&output=csv";
+const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=113796128&single=true&output=csv";
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -10,33 +11,68 @@ function App() {
   const [cart, setCart] = useState<CartItem[]>([]); // Cart now stores CartItem[]
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isCartModalOpen, setIsCartModalOpen] = useState(false); // New state for modal
+  const [settings, setSettings] = useState<Record<string, string>>({}); // New state for settings
+  const [pickupTime, setPickupTime] = useState<string>("As soon as possible (15-20 mins)"); // New state for pickup time
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
   useEffect(() => {
     setLoading(true);
-    Papa.parse(CSV_URL, {
-      download: true,
-      header: true,
-      complete: (results) => {
-        const parsedProducts: Product[] = results.data
-          .filter((item: any) => item.id && item.name && item.price && item.category && item.image) // Ensure all required fields exist
-          .map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            price: parseFloat(item.price),
-            originalPrice: item.originalPrice ? parseFloat(item.originalPrice) : undefined,
-            category: item.category,
-            image: item.image,
-          }));
-        setProducts(parsedProducts);
-        setLoading(false);
-      },
-      error: (error) => {
-        console.error("Error fetching or parsing CSV:", error);
-        setLoading(false);
-      }
+
+    const fetchProducts = new Promise<Product[]>((resolve, reject) => {
+      Papa.parse(PRODUCTS_CSV_URL, {
+        download: true,
+        header: true,
+        complete: (results) => {
+          const parsedProducts: Product[] = results.data
+            .filter((item: any) => item.id && item.name && item.price && item.category && item.image) // Ensure all required fields exist
+            .map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              price: parseFloat(item.price),
+              originalPrice: item.originalPrice ? parseFloat(item.originalPrice) : undefined,
+              category: item.category,
+              image: item.image,
+            }));
+          resolve(parsedProducts);
+        },
+        error: (error: Error) => {
+          console.error("Error fetching or parsing products CSV:", error);
+          reject(error);
+        }
+      });
     });
+
+    const fetchSettings = new Promise<Record<string, string>>((resolve, reject) => {
+      Papa.parse(SETTINGS_CSV_URL, {
+        download: true,
+        header: true,
+        complete: (results) => {
+          const parsedSettings: Record<string, string> = {};
+          (results.data as { key: string; value: string }[]).forEach(row => {
+            if (row.key && row.value) {
+              parsedSettings[row.key] = row.value;
+            }
+          });
+          resolve(parsedSettings);
+        },
+        error: (error: Error) => {
+          console.error("Error fetching or parsing settings CSV:", error);
+          reject(error);
+        }
+      });
+    });
+
+    Promise.all([fetchProducts, fetchSettings])
+      .then(([productsData, settingsData]) => {
+        setProducts(productsData);
+        setSettings(settingsData);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch all data:", error);
+        setLoading(false);
+      });
   }, []);
 
   const addToCart = (product: Product) => {
@@ -69,7 +105,8 @@ function App() {
 
   const sendWhatsAppOrder = () => { // Renamed from handleCheckout
     const phoneNumber = '+919835978626'; // Placeholder phone number
-    let message = 'My Order from Rajni General Store:\n\n';
+    let message = `*Pickup Time: ${pickupTime}*\n\n`; // Add pickup time prominently
+    message += 'My Order from Rajni General Store:\n\n';
 
     cart.forEach((item, index) => {
       message += `${index + 1}. ${item.name} x ${item.quantity} - ₹${item.price * item.quantity}\n`;
@@ -83,7 +120,7 @@ function App() {
   };
 
   const handleUploadList = () => {
-    const phoneNumber = '919835978626'; // Placeholder phone number
+    const phoneNumber = '+919835978626'; // Placeholder phone number (ensure consistent format)
     const message = "Hi, I have a handwritten grocery list. I will attach the photo below. Please let me know when it is packed!";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -99,13 +136,32 @@ function App() {
         
         {/* The Lunch Break Promo Banner */}
         <div className="bg-yellow-100 p-3 text-sm text-yellow-800 text-center font-medium border-b border-yellow-200">
-          🕒 Shop closed for lunch? Order online now and your bags will be packed and ready for pickup at 4:00 PM!
+          🕒 Shop closed for lunch? Order online now and your bags will be packed and ready for pickup at {settings.break_end_time || "4:30 PM"}!
         </div>
       </header>
 
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Available Products</h2>
+
+        {/* Pickup Time Selector */}
+        <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
+          <span className="text-xl">🕒</span>
+          <select
+            value={pickupTime}
+            onChange={(e) => setPickupTime(e.target.value)}
+            className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
+          >
+            <option>As soon as possible (15-20 mins)</option>
+            {settings.break_end_time && (
+              <option>After lunch closure (Ready at {settings.break_end_time})</option>
+            )}
+            {settings.break_end_time && settings.shop_close_time && (
+              <option>Evening pickup (Between {settings.break_end_time} and {settings.shop_close_time})</option>
+            )}
+          </select>
+        </div>
+
         {loading ? (
           <p className="text-center text-gray-600 text-lg mt-8">Loading products...</p>
         ) : (
