@@ -242,8 +242,6 @@ function App() {
 
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Available Products</h2>
-
         {/* Pickup Time Selector */}
         {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
           <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
