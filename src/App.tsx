@@ -143,12 +143,41 @@ function App() {
                       )}
                     </div>
                     
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="w-full bg-blue-50 text-blue-600 font-semibold py-2 rounded-lg text-sm hover:bg-blue-100 transition-colors"
-                    >
-                      Add to Cart
-                    </button>
+                    {(() => {
+                      const cartItem = cart.find((item) => item.id === product.id);
+                      const currentQuantity = cartItem ? cartItem.quantity : 0;
+
+                      if (currentQuantity === 0) {
+                        return (
+                          <button 
+                            onClick={() => addToCart(product)}
+                            className="w-full bg-blue-50 text-blue-600 font-semibold py-2 rounded-lg text-sm hover:bg-blue-100 transition-colors"
+                          >
+                            Add to Cart
+                          </button>
+                        );
+                      } else {
+                        return (
+                          <div className="flex items-center justify-center w-full bg-green-50 border border-green-300 rounded-lg text-green-700 font-semibold text-sm">
+                            <button
+                              onClick={() => removeFromCart(product.id)}
+                              className="py-2 px-3 focus:outline-none text-lg"
+                            >
+                              -
+                            </button>
+                            <span className="flex-1 text-center py-2 border-x border-green-200">
+                              {currentQuantity}
+                            </span>
+                            <button
+                              onClick={() => addToCart(product)}
+                              className="py-2 px-3 focus:outline-none text-lg"
+                            >
+                              +
+                            </button>
+                          </div>
+                        );
+                      }
+                    })()}
                   </div>
                 ))}
             </div>
