@@ -1,8 +1,39 @@
-import { useState } from 'react';
-import { products, type Product } from './data';
+import { useState, useEffect } from 'react';
+import Papa from 'papaparse';
+import { type Product } from './data';
+
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?output=csv";
 
 function App() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setLoading(true);
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      complete: (results) => {
+        const parsedProducts: Product[] = results.data
+          .filter((item: any) => item.id && item.name && item.price && item.category && item.image) // Ensure all required fields exist
+          .map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            price: parseFloat(item.price),
+            originalPrice: item.originalPrice ? parseFloat(item.originalPrice) : undefined,
+            category: item.category,
+            image: item.image,
+          }));
+        setProducts(parsedProducts);
+        setLoading(false);
+      },
+      error: (error) => {
+        console.error("Error fetching or parsing CSV:", error);
+        setLoading(false);
+      }
+    });
+  }, []);
 
   const addToCart = (product: Product) => {
     setCart([...cart, product]);
@@ -41,11 +72,13 @@ function App() {
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Available Products</h2>
-        
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {products.map((product) => (
-            <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
+        {loading ? (
+          <p className="text-center text-gray-600 text-lg mt-8">Loading products...</p>
+        ) : (
+          /* Product Grid */
+          <div className="grid grid-cols-2 gap-4">
+            {products.map((product) => (
+              <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
               <div className="text-4xl mb-2">{product.image}</div>
               <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
               
@@ -63,8 +96,9 @@ function App() {
                 Add to Cart
               </button>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Upload List Section Placeholder */}
         <div className="mt-8 bg-blue-600 text-white p-6 rounded-xl text-center shadow-md">
