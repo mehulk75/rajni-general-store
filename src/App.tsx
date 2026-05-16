@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { products, Product } from './data';
+import { products, type Product } from './data';
 
 function App() {
   const [cart, setCart] = useState<Product[]>([]);
