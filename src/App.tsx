@@ -11,7 +11,7 @@ function App() {
   const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
   const handleCheckout = () => {
-    const phoneNumber = '+919999999999'; // Placeholder phone number
+    const phoneNumber = '+919835978626'; // Placeholder phone number
     let message = 'My Order from Rajni General Store:\n\n';
 
     cart.forEach((item, index) => {
