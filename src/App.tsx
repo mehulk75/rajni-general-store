@@ -337,7 +337,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header & Banner */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="p-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-green-700">Rajni General Store</h1>
         </div>
@@ -546,6 +546,11 @@ function App() {
           >
             📷 Upload List
           </button>
+        </div>
+        <div className="mt-12 pb-6 text-center">
+          <p className="text-sm text-gray-500 font-medium flex items-center justify-center gap-1.5">
+            Made with <span className="text-red-500 text-lg">❤️</span> for Papa by Mehul
+          </p>
         </div>
       </main>
 
