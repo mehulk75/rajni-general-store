@@ -5,7 +5,7 @@ import { type Product, type CartItem } from './data'; // Import CartItem
 const PRODUCTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=0&single=true&output=csv";
 const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=113796128&single=true&output=csv";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi_Z6sZ6WR8R7oJoVbS4TirK1v_cpD4tLrCgxXeSLzNOt7fCQVIQYoYuAkkRH0XfqqRQ/exec";
-const BANNERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=940474661&single=true&output=csv"; // Assuming a new gid for banners
+const BANNERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=1387742161&single=true&output=csv"; // Assuming a new gid for banners
 
 // Helper function to parse time strings like "7:00 AM" into total minutes from midnight
 const parseTimeToMinutes = (timeStr: string): number => {
