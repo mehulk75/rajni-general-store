@@ -46,6 +46,7 @@ function App() {
   const [pickupTime, setPickupTime] = useState<string>("As soon as possible (15-20 mins)"); // New state for pickup time
   const [storeStatus, setStoreStatus] = useState<'LOADING' | 'OPEN' | 'LUNCH_BREAK' | 'CLOSED_NIGHT'>('LOADING');
   const [pickupOptions, setPickupOptions] = useState<string[]>([]); // New state for dynamic pickup options
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null); // New state for product details modal
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
@@ -308,21 +309,23 @@ function App() {
                 .map((product) => (
                   <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center h-full">
                     
-                    {/* Fixed Height Image/Emoji Container */}
-                    <div className="w-full h-24 flex items-center justify-center mb-2">
-                      {product.image.startsWith('http') ? (
-                        <img 
-                          src={product.image} 
-                          alt={product.name} 
-                          className="max-h-full max-w-full object-contain drop-shadow-sm" 
-                          loading="lazy" 
-                        />
-                      ) : (
-                        <div className="text-5xl">{product.image}</div>
-                      )}
+                    <div onClick={() => setSelectedProduct(product)} className="cursor-pointer w-full flex flex-col items-center flex-grow"> {/* Added flex-grow */}
+                      {/* Fixed Height Image/Emoji Container */}
+                      <div className="w-full h-24 flex items-center justify-center mb-2">
+                        {product.image.startsWith('http') ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="w-16 h-16 object-contain mb-2" 
+                            loading="lazy" 
+                          />
+                        ) : (
+                          <div className="text-5xl">{product.image}</div>
+                        )}
+                      </div>
+                      
+                      <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
                     </div>
-                    
-                    <h3 className="font-medium text-gray-800 text-sm mb-1 line-clamp-2 h-10">{product.name}</h3>
                     
                     {/* mt-auto pushes the price and button to the absolute bottom */}
                     <div className="mt-auto w-full">
@@ -387,6 +390,81 @@ function App() {
           </button>
         </div>
       </main>
+
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4" onClick={() => setSelectedProduct(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm relative" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedProduct(null)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-semibold"
+            >
+              &times;
+            </button>
+
+            <div className="flex flex-col items-center">
+              {/* Product Image/Emoji */}
+              <div className="w-48 h-48 flex items-center justify-center mb-4">
+                {selectedProduct.image.startsWith('http') ? (
+                  <img 
+                    src={selectedProduct.image} 
+                    alt={selectedProduct.name} 
+                    className="max-h-full max-w-full object-contain drop-shadow-sm" 
+                  />
+                ) : (
+                  <div className="text-7xl">{selectedProduct.image}</div>
+                )}
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-800 mt-4 mb-2 text-center">{selectedProduct.name}</h2>
+              
+              <div className="mb-4">
+                <span className="font-bold text-green-600 text-lg">₹{selectedProduct.price}</span>
+                {selectedProduct.originalPrice && (
+                  <span className="text-sm text-gray-400 line-through ml-2">₹{selectedProduct.originalPrice}</span>
+                )}
+              </div>
+
+              {/* Add to Cart / Quantity Selector for Modal */}
+              {(() => {
+                const cartItem = cart.find((item) => item.id === selectedProduct.id);
+                const currentQuantity = cartItem ? cartItem.quantity : 0;
+
+                if (currentQuantity === 0) {
+                  return (
+                    <button 
+                      onClick={() => addToCart(selectedProduct)}
+                      className="w-full bg-blue-50 text-blue-600 font-semibold py-3 rounded-lg text-base hover:bg-blue-100 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                  );
+                } else {
+                  return (
+                    <div className="flex items-center justify-center w-full bg-green-50 border border-green-300 rounded-lg text-green-700 font-semibold text-base">
+                      <button
+                        onClick={() => removeFromCart(selectedProduct.id)}
+                        className="py-2 px-4 focus:outline-none text-xl"
+                      >
+                        -
+                      </button>
+                      <span className="flex-1 text-center py-2 border-x border-green-200">
+                        {currentQuantity}
+                      </span>
+                      <button
+                        onClick={() => addToCart(selectedProduct)}
+                        className="py-2 px-4 focus:outline-none text-xl"
+                      >
+                        +
+                      </button>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Cart Footer */}
       {cart.length > 0 && (
