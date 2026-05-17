@@ -626,6 +626,14 @@ function App() {
                   <span className="text-xl font-bold text-green-600">₹{totalPrice}</span>
                 </div>
 
+                {/* Price Disclaimer */}
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-start space-x-2">
+                  <span className="text-blue-500 mt-0.5">ℹ️</span>
+                  <p className="text-xs text-blue-800 leading-relaxed">
+                    <strong>Note:</strong> The final bill amount may vary slightly. Papa might apply special store discounts at the counter, or prices may be updated based on the latest MRP.
+                  </p>
+                </div>
+
                 <button
                   onClick={sendWhatsAppOrder} // New button for WhatsApp order
                   className="w-full bg-green-600 text-white font-bold py-3 mt-6 rounded-xl shadow-md flex items-center justify-center gap-2"
