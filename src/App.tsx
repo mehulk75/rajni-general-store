@@ -399,7 +399,7 @@ function App() {
               {products
                 .filter(product => (selectedCategory === 'All' || product.category === selectedCategory) && (!searchQuery || product.name.toLowerCase().includes(searchQuery.toLowerCase()) || product.category.toLowerCase().includes(searchQuery.toLowerCase())))
                 .map((product) => (
-                  <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center h-full">
+                  <div key={product.id} className={`p-4 rounded-xl shadow-sm border flex flex-col items-center text-center h-full ${product.inStock === false ? 'bg-gray-50 opacity-60 grayscale border-gray-200' : 'bg-white border-gray-100'}`}>
                     
                     <div onClick={() => setSelectedProduct(product)} className="cursor-pointer w-full flex flex-col items-center flex-grow"> {/* Added flex-grow */}
                       {/* Fixed Height Image/Emoji Container */}
@@ -432,7 +432,13 @@ function App() {
                         const cartItem = cart.find((item) => item.id === product.id);
                         const currentQuantity = cartItem ? cartItem.quantity : 0;
 
-                        if (currentQuantity === 0) {
+                        if (product.inStock === false) {
+                          return (
+                            <button disabled className="w-full bg-gray-100 text-gray-400 font-semibold py-2 rounded-lg text-sm cursor-not-allowed">
+                              Out of Stock
+                            </button>
+                          );
+                        } else if (currentQuantity === 0) {
                           return (
                             <button 
                               onClick={() => addToCart(product)}
