@@ -92,6 +92,7 @@ function App() {
         header: true,
         transformHeader: (header) => header.trim(),
         complete: (results) => {
+          console.log("RAW CSV DATA:", results.data);
           const parsedProducts: Product[] = results.data
             .filter((item: any) => item.id && item.name && item.price && item.category && item.image) // Ensure all required fields exist
             .map((item: any) => ({
@@ -103,6 +104,7 @@ function App() {
               image: item.image,
               inStock: item.inStock !== undefined && String(item.inStock).trim() === '0' ? false : true,
             }));
+          console.log("PARSED REACT PRODUCTS:", parsedProducts);
           resolve(parsedProducts);
         },
         error: (error: Error) => {
