@@ -35,6 +35,33 @@ const formatMinutesToTime = (totalMinutes: number): string => {
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
+const PROMO_BANNERS = [
+  {
+    id: 1,
+    title: "New Arrivals! 🥣",
+    subtitle: "We now stock Yogabar Muesli & Protein Bars. Grab yours today for a healthy start!",
+    bgColor: "bg-orange-50",
+    textColor: "text-orange-800",
+    borderColor: "border-orange-200"
+  },
+  {
+    id: 2,
+    title: "Special Store Discounts 💸",
+    subtitle: "Ask Papa at the counter for today's special unadvertised deals on daily groceries.",
+    bgColor: "bg-green-50",
+    textColor: "text-green-800",
+    borderColor: "border-green-200"
+  },
+  {
+    id: 3,
+    title: "Have a long list? 📝",
+    subtitle: "Skip searching! Just upload a photo of your handwritten list at the bottom of the page.",
+    bgColor: "bg-blue-50",
+    textColor: "text-blue-800",
+    borderColor: "border-blue-200"
+  }
+];
+
 class TrieNode {
   children: Record<string, TrieNode> = {};
   isEndOfWord: boolean = false;
@@ -80,6 +107,7 @@ function App() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchTrie, setSearchTrie] = useState<Trie | null>(null);
+  const [activeBanner, setActiveBanner] = useState(0); // New state for active banner
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
@@ -217,6 +245,14 @@ function App() {
     return () => clearInterval(intervalId); // Cleanup interval on unmount
   }, [settings]);
 
+  // Effect to handle auto-rotation of promo banners
+  useEffect(() => {
+    const bannerInterval = setInterval(() => {
+      setActiveBanner((prev) => (prev + 1) % PROMO_BANNERS.length);
+    }, 4000);
+    return () => clearInterval(bannerInterval);
+  }, []);
+
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -321,6 +357,30 @@ function App() {
 
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
+        {/* Auto-Rotating Promotional Banner */}
+        <div
+          className={`relative h-28 mb-6 overflow-hidden rounded-xl border shadow-sm transition-all duration-500 ease-in-out ${PROMO_BANNERS[activeBanner].bgColor} ${PROMO_BANNERS[activeBanner].borderColor}`}
+        >
+          {PROMO_BANNERS.map((banner, index) => (
+            <div 
+              key={banner.id}
+              className={`absolute inset-0 p-4 flex flex-col justify-center transition-opacity duration-700 ease-in-out ${index === activeBanner ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+            >
+              <h3 className={`font-bold text-lg mb-1 ${banner.textColor}`}>{banner.title}</h3>
+              <p className={`text-sm leading-snug ${banner.textColor} opacity-90`}>{banner.subtitle}</p>
+            </div>
+          ))}
+          
+          {/* Banner Navigation Dots */}
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center space-x-1.5 z-20">
+            {PROMO_BANNERS.map((_, index) => (
+              <div 
+                key={index} 
+                className={`h-1.5 rounded-full transition-all duration-300 ${index === activeBanner ? 'w-4 bg-gray-800 opacity-60' : 'w-1.5 bg-gray-400 opacity-40'}`}
+              />
+            ))}
+          </div>
+        </div>
 
         {/* Pickup Time Selector */}
         {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
