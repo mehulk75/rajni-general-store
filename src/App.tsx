@@ -35,6 +35,35 @@ const formatMinutesToTime = (totalMinutes: number): string => {
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
+class TrieNode {
+  children: Record<string, TrieNode> = {};
+  isEndOfWord: boolean = false;
+  words: Set<string> = new Set();
+}
+
+class Trie {
+  root: TrieNode = new TrieNode();
+
+  insert(wordToIndex: string, fullProductName: string) {
+    let node = this.root;
+    for (const char of wordToIndex.toLowerCase()) {
+      if (!node.children[char]) node.children[char] = new TrieNode();
+      node = node.children[char];
+      node.words.add(fullProductName);
+    }
+    node.isEndOfWord = true;
+  }
+
+  searchPrefix(prefix: string): string[] {
+    let node = this.root;
+    for (const char of prefix.toLowerCase()) {
+      if (!node.children[char]) return [];
+      node = node.children[char];
+    }
+    return Array.from(node.words);
+  }
+}
+
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -47,6 +76,10 @@ function App() {
   const [storeStatus, setStoreStatus] = useState<'LOADING' | 'OPEN' | 'LUNCH_BREAK' | 'CLOSED_NIGHT'>('LOADING');
   const [pickupOptions, setPickupOptions] = useState<string[]>([]); // New state for dynamic pickup options
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null); // New state for product details modal
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchTrie, setSearchTrie] = useState<Trie | null>(null);
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
 
@@ -104,6 +137,18 @@ function App() {
         setProducts(productsData);
         setSettings(settingsData);
         setLoading(false);
+
+        // Build Trie asynchronously
+        setTimeout(() => {
+          const trie = new Trie();
+          productsData.forEach(p => {
+            trie.insert(p.name, p.name);
+            p.name.split(" ").forEach(word => trie.insert(word, p.name));
+            trie.insert(p.category, p.name);
+          });
+          setSearchTrie(trie);
+        }, 0);
+
       })
       .catch((error) => {
         console.error("Failed to fetch all data:", error);
@@ -228,7 +273,7 @@ function App() {
 
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-    setIsCartModalOpen(false); 
+    setIsCartModalOpen(false);
   };
 
   const handleUploadList = () => {
@@ -236,6 +281,18 @@ function App() {
     const message = "Hi, I have a handwritten grocery list. I will attach the photo below. Please let me know when it is packed!";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.length > 0 && searchTrie) {
+      setSuggestions(searchTrie.searchPrefix(query).slice(0, 5));
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
   };
 
   return (
@@ -281,6 +338,38 @@ function App() {
           </div>
         )}
 
+        {/* Search Bar with Autocomplete */}
+        <div className="mb-4 relative z-20">
+          <div className="flex items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <span className="text-gray-400 mr-2 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="Search for groceries..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => { if (searchQuery.length > 0) setShowSuggestions(true); }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              className="flex-1 focus:outline-none text-gray-700 bg-transparent"
+            />
+            {searchQuery && (
+              <button onClick={() => { setSearchQuery(''); setSuggestions([]); }} className="text-gray-400 hover:text-gray-600 font-bold ml-2">✕</button>
+            )}
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+              {suggestions.map((suggestion, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => { setSearchQuery(suggestion); setShowSuggestions(false); }}
+                  className="px-4 py-3 cursor-pointer hover:bg-gray-50 text-gray-700 border-b border-gray-50 last:border-b-0"
+                >
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {loading ? (
           <p className="text-center text-gray-600 text-lg mt-8">Loading products...</p>
         ) : (
@@ -305,7 +394,7 @@ function App() {
             {/* Product Grid */}
             <div className="grid grid-cols-2 gap-4">
               {products
-                .filter(product => selectedCategory === 'All' || product.category === selectedCategory)
+                .filter(product => (selectedCategory === 'All' || product.category === selectedCategory) && (!searchQuery || product.name.toLowerCase().includes(searchQuery.toLowerCase()) || product.category.toLowerCase().includes(searchQuery.toLowerCase())))
                 .map((product) => (
                   <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center h-full">
                     
