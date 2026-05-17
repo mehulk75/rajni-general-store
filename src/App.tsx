@@ -101,6 +101,7 @@ function App() {
               originalPrice: item.originalPrice ? parseFloat(item.originalPrice) : undefined,
               category: item.category,
               image: item.image,
+              inStock: item.inStock !== undefined && String(item.inStock).trim() === '0' ? false : true,
             }));
           resolve(parsedProducts);
         },
@@ -519,7 +520,13 @@ function App() {
                 const cartItem = cart.find((item) => item.id === selectedProduct.id);
                 const currentQuantity = cartItem ? cartItem.quantity : 0;
 
-                if (currentQuantity === 0) {
+                if (selectedProduct.inStock === false) {
+                  return (
+                    <button disabled className="w-full bg-gray-100 text-gray-400 font-semibold py-3 rounded-lg text-base cursor-not-allowed">
+                      Out of Stock
+                    </button>
+                  );
+                } else if (currentQuantity === 0) {
                   return (
                     <button 
                       onClick={() => addToCart(selectedProduct)}

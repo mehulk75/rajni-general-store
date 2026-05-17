@@ -5,6 +5,7 @@ export interface Product {
   originalPrice?: number; // Useful for showing discounts on bundles
   category: string;
   image: string;
+  inStock?: boolean;
 }
 
 export interface CartItem extends Product {
