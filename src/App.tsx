@@ -318,12 +318,6 @@ function App() {
     setIsCartModalOpen(false);
   };
 
-  const handleUploadList = () => {
-    const phoneNumber = '+919835978626'; // Placeholder phone number (ensure consistent format)
-    const message = "Hi, I have a handwritten grocery list. I will attach the photo below. Please let me know when it is packed!";
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
 
   const handleUploadList = () => {
     const phoneNumber = '+919835978626'; // Placeholder phone number (ensure consistent format)
