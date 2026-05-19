@@ -490,16 +490,16 @@ function App() {
                     
                     <div onClick={() => setSelectedProduct(product)} className="cursor-pointer w-full flex flex-col items-center flex-grow"> {/* Added flex-grow */}
                       {/* Fixed Height Image/Emoji Container */}
-                      <div className="w-full h-24 flex items-center justify-center mb-2">
+                      <div className="w-full h-28 flex items-center justify-center mb-3">
                         {product.image.startsWith('http') ? (
                           <img 
                             src={product.image} 
                             alt={product.name} 
-                            className="w-16 h-16 object-contain mb-2" 
+                            className="max-w-full max-h-full object-contain mix-blend-multiply" 
                             loading="lazy" 
                           />
                         ) : (
-                          <div className="text-5xl">{product.image}</div>
+                          <div className="text-6xl">{product.image}</div>
                         )}
                       </div>
                       
