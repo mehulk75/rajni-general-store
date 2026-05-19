@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { type Product, type CartItem } from './data'; // Import CartItem
 
+/* TAILWIND SAFELIST 
+  bg-orange-50 text-orange-800 border-orange-200
+  bg-green-50 text-green-800 border-green-200
+  bg-blue-50 text-blue-800 border-blue-200
+  bg-red-50 text-red-800 border-red-200
+  bg-yellow-50 text-yellow-800 border-yellow-200
+  bg-purple-50 text-purple-800 border-purple-200
+*/
+
 const PRODUCTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=0&single=true&output=csv";
 const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeyX4ZGUI7LWLOETHwWYwEqCIlxAodMX1gE7zgdtOinZuuvfLEsbLGGDtcruU7LEGtyg92ZFFn5Ka/pub?gid=113796128&single=true&output=csv";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi_Z6sZ6WR8R7oJoVbS4TirK1v_cpD4tLrCgxXeSLzNOt7fCQVIQYoYuAkkRH0XfqqRQ/exec";
@@ -35,6 +44,33 @@ const formatMinutesToTime = (totalMinutes: number): string => {
 
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
+
+const PROMO_BANNERS = [
+  {
+    id: 1,
+    title: "New Arrivals! 🥣",
+    subtitle: "We now stock Yogabar Muesli & Protein Bars. Grab yours today for a healthy start!",
+    bgColor: "bg-orange-50",
+    textColor: "text-orange-800",
+    borderColor: "border-orange-200"
+  },
+  {
+    id: 2,
+    title: "Special Store Discounts 💸",
+    subtitle: "Ask Papa at the counter for today's special unadvertised deals on daily groceries.",
+    bgColor: "bg-green-50",
+    textColor: "text-green-800",
+    borderColor: "border-green-200"
+  },
+  {
+    id: 3,
+    title: "Have a long list? 📝",
+    subtitle: "Skip searching! Just upload a photo of your handwritten list at the bottom of the page.",
+    bgColor: "bg-blue-50",
+    textColor: "text-blue-800",
+    borderColor: "border-blue-200"
+  }
+];
 
 interface Banner {
   id: string;
@@ -93,7 +129,7 @@ function App() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchTrie, setSearchTrie] = useState<Trie | null>(null);
-  const [activeBanner, setActiveBanner] = useState(0); // New state for active banner
+  const [activeBanner, setActiveBanner] = useState(0);
   const [banners, setBanners] = useState<Banner[]>([]); // New state for dynamic banners
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
@@ -232,7 +268,14 @@ function App() {
     return () => clearInterval(intervalId); // Cleanup interval on unmount
   }, [settings]);
 
-  // Effect to fetch banners independently
+  useEffect(() => {
+    const bannerInterval = setInterval(() => {
+      setActiveBanner((prev) => (prev + 1) % PROMO_BANNERS.length);
+    }, 4000);
+    return () => clearInterval(bannerInterval);
+  }, []);
+
+  // Effect to fetch banners independently (keeping this for future use if dynamic banners are reinstituted)
   useEffect(() => {
     Papa.parse(BANNERS_CSV_URL, {
       download: true,
@@ -246,15 +289,6 @@ function App() {
       error: (err) => console.error("Failed to load banners", err)
     });
   }, []);
-
-  // Effect to handle auto-rotation of promo banners
-  useEffect(() => {
-    if (banners.length === 0) return; // Only start rotation if banners are loaded
-    const bannerInterval = setInterval(() => {
-      setActiveBanner((prev) => (prev + 1) % banners.length);
-    }, 4000);
-    return () => clearInterval(bannerInterval);
-  }, [banners.length]); // Depend on banners.length
 
 
   const addToCart = (product: Product) => {
@@ -374,32 +408,29 @@ function App() {
       {/* Main Content */}
       <main className="p-4 max-w-md mx-auto">
         {/* Auto-Rotating Promotional Banner */}
-        {banners.length > 0 && (
-          <div
-            onClick={handleBannerClick}
-            className={`cursor-pointer relative h-28 mb-6 overflow-hidden rounded-xl border shadow-sm transition-all duration-500 ease-in-out ${banners[activeBanner]?.bgColor} ${banners[activeBanner]?.borderColor || 'border-gray-200'}`}
-          >
-            {banners.map((banner, index) => (
-              <div 
-                key={banner.id}
-                className={`absolute inset-0 p-4 flex flex-col justify-center transition-opacity duration-700 ease-in-out ${index === activeBanner ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-              >
-                <h3 className={`font-bold text-lg mb-1 ${banner.textColor}`}>{banner.title}</h3>
-                <p className={`text-sm leading-snug ${banner.textColor} opacity-90`}>{banner.subtitle}</p>
-              </div>
-            ))}
-            
-            {/* Banner Navigation Dots */}
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center space-x-1.5 z-20">
-              {banners.map((_, index) => (
-                <div 
-                  key={index} 
-                  className={`h-1.5 rounded-full transition-all duration-300 ${index === activeBanner ? 'w-4 bg-gray-800 opacity-60' : 'w-1.5 bg-gray-400 opacity-40'}`}
-                />
-              ))}
+        <div 
+          className={`relative h-28 mb-6 overflow-hidden rounded-xl border shadow-sm ${PROMO_BANNERS[activeBanner].bgColor} ${PROMO_BANNERS[activeBanner].borderColor}`}
+        >
+          {PROMO_BANNERS.map((banner, index) => (
+            <div 
+              key={banner.id}
+              className={`absolute inset-0 p-4 flex flex-col justify-center transition-opacity duration-700 ease-in-out ${index === activeBanner ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+            >
+              <h3 className={`font-bold text-lg mb-1 ${banner.textColor}`}>{banner.title}</h3>
+              <p className={`text-sm leading-snug ${banner.textColor} opacity-90`}>{banner.subtitle}</p>
             </div>
+          ))}
+          
+          {/* Banner Navigation Dots */}
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center space-x-1.5 z-20">
+            {PROMO_BANNERS.map((_, index) => (
+              <div 
+                key={index} 
+                className={`h-1.5 rounded-full transition-all duration-300 ${index === activeBanner ? 'w-4 bg-gray-800 opacity-60' : 'w-1.5 bg-gray-400 opacity-40'}`}
+              />
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Pickup Time Selector */}
         {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
