@@ -362,7 +362,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header & Banner */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white shadow-sm">
         <div className="p-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-green-700">Rajni General Store</h1>
         </div>
@@ -430,9 +430,10 @@ function App() {
         )}
 
         {/* Search Bar with Autocomplete */}
-        <div className="mb-4 relative z-20">
-          <div className="flex items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-            <span className="text-gray-400 mr-2 text-lg">🔍</span>
+        <div className="sticky top-0 z-40 bg-gray-50 pt-2 pb-4 mb-2 -mx-4 px-4">
+          <div className="relative">
+            <div className="flex items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+              <span className="text-gray-400 mr-2 text-lg">🔍</span>
             <input
               type="text"
               placeholder="Search for groceries..."
@@ -466,6 +467,7 @@ function App() {
             </div>
           )}
         </div>
+      </div> {/* This closes the <div className="relative"> */}
 
         {loading ? (
           <p className="text-center text-gray-600 text-lg mt-8">Loading products...</p>
