@@ -337,6 +337,7 @@ function App() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
+    setSelectedCategory('All'); // Instantly reset category when searching
     if (query.length > 0 && searchTrie) {
       setSuggestions(searchTrie.searchPrefix(query).slice(0, 5));
       setShowSuggestions(true);
@@ -413,12 +414,12 @@ function App() {
         {Object.keys(settings).length > 0 && storeStatus !== 'LOADING' && (
           <div className="mb-6"> {/* Added wrapper div with margin-bottom */}
             <h3 className="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Choose your preferred pickup slot</h3>
-            <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2">
-              <span className="text-xl">🕒</span>
+            <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center space-x-2 overflow-hidden">
+              <span className="text-xl shrink-0">🕒</span>
               <select
                 value={pickupTime}
                 onChange={(e) => setPickupTime(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700"
+                className="flex-1 w-full bg-transparent focus:outline-none text-gray-700 text-sm truncate appearance-none"
               >
                 {pickupOptions.map((option, index) => (
                   <option key={index} value={option}>{option}</option>
@@ -437,16 +438,22 @@ function App() {
               placeholder="Search for groceries..."
               value={searchQuery}
               onChange={handleSearchChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setShowSuggestions(false);
+                  e.currentTarget.blur();
+                }
+              }}
               onFocus={() => { if (searchQuery.length > 0) setShowSuggestions(true); }}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              className="flex-1 focus:outline-none text-gray-700 bg-transparent"
+              className="flex-1 focus:outline-none text-gray-700 bg-transparent w-full min-w-0"
             />
             {searchQuery && (
               <button onClick={() => { setSearchQuery(''); setSuggestions([]); }} className="text-gray-400 hover:text-gray-600 font-bold ml-2">✕</button>
             )}
           </div>
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg overflow-y-auto max-h-48 z-50">
               {suggestions.map((suggestion, idx) => (
                 <div
                   key={idx}
